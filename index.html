@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Counting Down...</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" href="./photos/icon.jpeg" type="image/png">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#ff7eb3',
+                        'secondary': '#ff758c',
+                        'accent': '#4a4a4a',
+                        'bg-cream': '#fff9f0'
+                    },
+                    fontFamily: {
+                        'handwriting': ['"Dancing Script"', 'cursive'],
+                        'body': ['"Poppins"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #fff9f0;
+            overflow-x: hidden;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .fade-in-element {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+
+        .fade-in-element.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Polaroid Style */
+        .polaroid {
+            background: white;
+            padding: 1rem; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, z-index 0s;
+            position: relative;
+        }
+        
+        .polaroid:hover {
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 50;
+        }
+
+        /* Candle Flame Animation */
+        .flame {
+            animation: flicker 1s infinite alternate;
+            transform-origin: center bottom;
+        }
+        
+        @keyframes flicker {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .flame.out {
+            display: none;
+        }
+
+        .smoke {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 20px;
+            background: rgba(100, 100, 100, 0.5);
+            border-radius: 50%;
+            filter: blur(5px);
+            animation: smokeRise 1s forwards;
+            display: none;
+        }
+
+        @keyframes smokeRise {
+            0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -30px) scale(2); }
+        }
+
+        /* Glassmorphism */
+        .glass-box {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Music Button Pulse */
+        .music-btn-pulse {
+            box-shadow: 0 0 0 0 rgba(255, 126, 179, 0.7);
+            animation: pulse-pink 2s infinite;
+        }
+        
+        @keyframes pulse-pink {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 126, 179, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 126, 179, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 126, 179, 0); }
+        }
+    </style>
+</head>
+<body class="text-accent antialiased">
+
+    <!-- Audio Player -->
+    <!-- Using a generic piano track. Replace 'src' with your own .mp3 file for best results -->
+    <audio id="bg-music" loop>
+        <source src="https://commondatastorage.googleapis.com/codeskulptor-demos/riceracer_assets/music/win.ogg" type="audio/ogg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Floating Music Control (Visible after opening) -->
+    <button id="music-toggle" class="fixed bottom-4 right-4 z-50 bg-white text-primary p-4 rounded-full shadow-lg hidden music-btn-pulse hover:bg-pink-50 transition-colors" onclick="toggleMusic()">
+        <i class="fas fa-music text-xl"></i>
+    </button>
+
+    <!-- Welcome Screen / Lock Screen -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 bg-gradient-to-br from-primary to-secondary flex flex-col items-center justify-center transition-all duration-1000 ease-in-out p-4">
+        
+        <!-- COUNTDOWN SECTION -->
+        <div id="countdown-wrapper" class="text-center text-white">
+            <h1 class="text-3xl md:text-5xl font-handwriting mb-8 animate-pulse">Wait for it...</h1>
+            
+            <div id="countdown" class="flex flex-wrap justify-center gap-4 md:gap-6 mb-8">
+                <div class="glass-box">
+                    <span id="days" class="text-3xl md:text-5xl font-bold">00</span>
+                    <span class="text-xs md:text-sm uppercase tracking-wider mt-1">Days</span>
+                </div>
+                <div class="glass-box">
+                    <span id="hours" class="text-3xl md:text-5xl font-bold">00</span>
+                    <span class="text-xs md:text-sm uppercase tracking-wider mt-1">Hours</span>
+                </div>
+                <div class="glass-box">
+                    <span id="minutes" class="text-3xl md:text-5xl font-bold">00</span>
+                    <span class="text-xs md:text-sm uppercase tracking-wider mt-1">Mins</span>
+                </div>
+                <div class="glass-box">
+                    <span id="seconds" class="text-3xl md:text-5xl font-bold">00</span>
+                    <span class="text-xs md:text-sm uppercase tracking-wider mt-1">Secs</span>
+                </div>
+            </div>
+            
+            <p class="text-white opacity-80 text-sm md:text-base">November 30th, 00:00</p>
+        </div>
+
+        <!-- GIFT BUTTON SECTION (Initially Hidden) -->
+        <div id="gift-box-container" class="hidden text-center text-white p-8 animate-bounce-in">
+            <h1 class="text-4xl md:text-6xl font-handwriting mb-8">It's Time!</h1>
+            <div class="bg-white text-primary p-8 rounded-lg shadow-2xl max-w-sm w-full mx-auto cursor-pointer transform hover:scale-105 transition-transform duration-300 relative group" onclick="startExperience()">
+                <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-6xl animate-bounce">🎁</div>
+                <h2 class="text-2xl font-bold mt-4">Tap to Open</h2>
+                <p class="text-sm text-gray-400 mt-2">(Turn up volume)</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Main Content (Hidden until opened) -->
+    <div id="main-content" class="opacity-0 transition-opacity duration-1000 hidden pb-20">
+        
+        <!-- 1. Hero Section (Wishing) -->
+        <header class="min-h-screen flex flex-col items-center justify-center text-center p-6 relative overflow-hidden bg-gradient-to-b from-pink-100 to-bg-cream">
+            <div class="floating z-10">
+                <span class="text-primary text-6xl md:text-8xl block font-handwriting mb-4">Happy Birthday</span>
+                <span class="text-4xl md:text-6xl font-bold text-gray-800">Kittu😺!</span>
+            </div>
+            <p class="mt-6 text-lg md:text-xl max-w-2xl text-gray-600 fade-in-element">
+                The wait is finally over. Welcome to your special day.
+            </p>
+            
+            <!-- Floating Elements -->
+            <div class="absolute top-10 left-10 text-pink-200 text-6xl opacity-50"><i class="fas fa-heart"></i></div>
+            <div class="absolute bottom-20 right-10 text-pink-200 text-8xl opacity-50"><i class="fas fa-heart"></i></div>
+        </header>
+
+        <!-- 2. Cake Section (Moved Up) -->
+        <section id="cake-section" class="py-20 bg-pink-50 text-center relative overflow-hidden">
+            <h2 class="text-4xl font-handwriting text-primary mb-8 fade-in-element">Make a Wish!</h2>
+            <p class="text-gray-500 mb-12 fade-in-element">Tap the candles to blow them out.</p>
+
+            <div class="relative inline-block mt-10 fade-in-element">
+                <div class="relative">
+                    <!-- Candles -->
+                    <div class="flex justify-center gap-4 absolute -top-16 left-1/2 transform -translate-x-1/2">
+                        <div class="relative cursor-pointer" onclick="blowCandle(this)">
+                            <div class="w-4 h-12 bg-blue-300 rounded border border-blue-400"></div>
+                            <div class="flame w-4 h-6 bg-yellow-400 rounded-full absolute -top-5 left-0 shadow-[0_0_10px_#ffeb3b]"></div>
+                            <div class="smoke"></div>
+                        </div>
+                        <div class="relative cursor-pointer" onclick="blowCandle(this)">
+                            <div class="w-4 h-12 bg-pink-300 rounded border border-pink-400"></div>
+                            <div class="flame w-4 h-6 bg-yellow-400 rounded-full absolute -top-5 left-0 shadow-[0_0_10px_#ffeb3b]"></div>
+                            <div class="smoke"></div>
+                        </div>
+                        <div class="relative cursor-pointer" onclick="blowCandle(this)">
+                            <div class="w-4 h-12 bg-purple-300 rounded border border-purple-400"></div>
+                            <div class="flame w-4 h-6 bg-yellow-400 rounded-full absolute -top-5 left-0 shadow-[0_0_10px_#ffeb3b]"></div>
+                            <div class="smoke"></div>
+                        </div>
+                    </div>
+                    <!-- Cake Base -->
+                    <div class="w-64 h-32 bg-amber-100 rounded-t-full relative border-b-8 border-pink-200 shadow-xl flex items-center justify-center">
+                        <div class="w-full absolute top-0 h-8 bg-white opacity-40 rounded-t-full"></div>
+                        <span class="text-pink-400 font-handwriting text-3xl z-10">Happy Bday!</span>
+                    </div>
+                    <div class="w-72 h-8 bg-gray-200 rounded-full -mt-4 mx-auto shadow-lg relative -z-10"></div>
+                </div>
+            </div>
+            <div id="wish-message" class="hidden mt-12">
+                 <h3 class="text-2xl font-bold text-primary">May all your wishes come true! 🎉</h3>
+            </div>
+        </section>
+
+        <!-- 3. SPECIAL MILESTONES (Moved Down) -->
+        <section id="milestones" class="py-20 container mx-auto px-4">
+             <h2 class="text-4xl font-handwriting text-center text-primary mb-16 fade-in-element">Where it Started</h2>
+             
+             <div class="flex flex-col md:flex-row justify-center gap-10 max-w-5xl mx-auto">
+                 <!-- Milestone 1 -->
+                 <div class="flex-1 fade-in-element">
+                     <div class="bg-white p-4 shadow-xl transform -rotate-1 hover:rotate-0 transition-transform duration-500">
+                         <div class="h-80 bg-gray-200 overflow-hidden relative">
+                             <!-- REPLACE IMG SRC -->
+                             <img src="./photos/1st meet.jpeg" class="w-full h-full object-cover">
+                         </div>
+                         <div class="pt-4 text-center">
+                             <h3 class="font-handwriting text-3xl text-primary">Our First Meet</h3>
+                             <p class="text-gray-500 text-sm mt-2">The day my life changed.</p>
+                         </div>
+                     </div>
+                 </div>
+
+                 <!-- Milestone 2 -->
+                 <div class="flex-1 fade-in-element">
+                     <div class="bg-white p-4 shadow-xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
+                         <div class="h-80 bg-gray-200 overflow-hidden relative">
+                             <!-- REPLACE IMG SRC -->
+                             <img src="./photos/1st selfie.jpeg" class="w-full h-full object-cover">
+                         </div>
+                         <div class="pt-4 text-center">
+                             <h3 class="font-handwriting text-3xl text-primary">Our First Selfie</h3>
+                             <p class="text-gray-500 text-sm mt-2">Look how awkward we were!</p>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+        </section>
+
+        <!-- 4. 12 MONTHS GALLERY (Moved Down) -->
+        <section id="gallery" class="py-20 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-4xl font-handwriting text-center text-primary mb-6 fade-in-element">12 Months of Us</h2>
+                <p class="text-center text-gray-500 mb-12 fade-in-element">One photo for every month we've shared.</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                    <!-- Generate 12 placeholders -->
+                    <!-- Month 1 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/November 24.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">November'24</p>
+                    </div>
+                    <!-- Month 2 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/December 24.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">December'24</p>
+                    </div>
+                    <!-- Month 3 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/January 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">January'25</p>
+                    </div>
+                    <!-- Month 4 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/February 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">February'25</p>
+                    </div>
+                    <!-- Month 5 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/March 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">March'25</p>
+                    </div>
+                    <!-- Month 6 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/April 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">April'25</p>
+                    </div>
+                    <!-- Month 7 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/May 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">May'25</p>
+                    </div>
+                    <!-- Month 8 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/June 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">June'25</p>
+                    </div>
+                    <!-- Month 9 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/July 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">July'25</p>
+                    </div>
+                    <!-- Month 10 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/August 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">August'25</p>
+                    </div>
+                    <!-- Month 11 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/September 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">September'25</p>
+                    </div>
+                    <!-- Month 12 -->
+                    <div class="polaroid fade-in-element">
+                        <div class="h-48 bg-gray-100 overflow-hidden mb-2"><img src="./photos/October 25.jpeg" class="w-full h-full object-cover"></div>
+                        <p class="text-center font-handwriting text-xl">October'25</p>
+                    </div>
+                </div>
+
+                <!-- Google Photos Link Section -->
+                <div class="text-center mt-16 fade-in-element">
+                    <!-- REPLACE THE HREF BELOW WITH YOUR GOOGLE PHOTOS LINK -->
+                    <a href="https://photos.app.goo.gl/FFnLYHYkF9x6LjUJ7" target="_blank" class="inline-flex items-center gap-2 bg-gradient-to-r from-primary to-secondary text-white font-handwriting text-2xl px-10 py-4 rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 transform">
+                        <i class="fas fa-images text-xl"></i> 
+                        <span>View Full Album on Google Photos</span>
+                    </a>
+                    <p class="text-gray-400 text-sm mt-4">See all our uncropped memories here!</p>
+                </div>
+
+            </div>
+        </section>
+
+        <footer class="bg-primary text-white text-center py-6">
+            <p class="font-handwriting text-xl">Made with ❤️ by Panda🐼</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // Set PAST date to test immediately.
+        const targetDate = new Date("November 30, 2025 00:00:00").getTime();
+        
+        // --- COUNTDOWN LOGIC ---
+        const countdownWrapper = document.getElementById('countdown-wrapper');
+        const giftBoxContainer = document.getElementById('gift-box-container');
+        
+        const second = 1000;
+        const minute = second * 60;
+        const hour = minute * 60;
+        const day = hour * 24;
+
+        const interval = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) {
+                // IT'S BIRTHDAY TIME!
+                clearInterval(interval);
+                countdownWrapper.style.display = "none";
+                giftBoxContainer.classList.remove('hidden');
+                document.title = "Happy Birthday!";
+                fireConfetti();
+                return;
+            }
+
+            document.getElementById('days').innerText = Math.floor(distance / day);
+            document.getElementById('hours').innerText = Math.floor((distance % day) / hour);
+            document.getElementById('minutes').innerText = Math.floor((distance % hour) / minute);
+            document.getElementById('seconds').innerText = Math.floor((distance % minute) / second);
+
+        }, 1000);
+
+        // --- AUDIO CONTROL ---
+        const audio = document.getElementById('bg-music');
+        const musicBtn = document.getElementById('music-toggle');
+        let isPlaying = false;
+
+        function toggleMusic() {
+            if (isPlaying) {
+                audio.pause();
+                musicBtn.innerHTML = '<i class="fas fa-music text-xl"></i>';
+                musicBtn.classList.remove('animate-spin'); // Stop spin on pause
+            } else {
+                audio.play();
+                musicBtn.innerHTML = '<i class="fas fa-pause text-xl"></i>';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        // --- MAIN EXPERIENCE LOGIC ---
+        function startExperience() {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const mainContent = document.getElementById('main-content');
+            // navbar removed
+
+            welcomeScreen.style.opacity = '0';
+            
+            setTimeout(() => {
+                welcomeScreen.style.display = 'none';
+                mainContent.style.display = 'block';
+                // navbar removed
+                musicBtn.classList.remove('hidden'); // Show music button
+                
+                void mainContent.offsetWidth; // Trigger reflow
+                mainContent.style.opacity = '1';
+                
+                // Attempt Auto-play
+                toggleMusic(); 
+                
+                fireConfetti();
+            }, 1000);
+        }
+
+        // --- SCROLL REVEAL ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.fade-in-element').forEach((el) => observer.observe(el));
+
+        // --- CANDLE LOGIC ---
+        let candlesBlown = 0;
+        function blowCandle(element) {
+            const flame = element.querySelector('.flame');
+            const smoke = element.querySelector('.smoke');
+            
+            if (!flame.classList.contains('out')) {
+                flame.classList.add('out');
+                smoke.style.display = 'block';
+                candlesBlown++;
+                if (candlesBlown === 3) {
+                    setTimeout(() => {
+                        document.getElementById('wish-message').classList.remove('hidden');
+                        fireConfetti();
+                    }, 500);
+                }
+            }
+        }
+
+        // --- CONFETTI LOGIC ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const colors = ['#ff7eb3', '#ff758c', '#ffd700', '#ffffff', '#87ceeb'];
+
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 5 + 5,
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                rotation: Math.random() * 360,
+                rotationSpeed: Math.random() * 10 - 5
+            };
+        }
+
+        function fireConfetti() {
+            particles = [];
+            for (let i = 0; i < 150; i++) particles.push(createParticle());
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+                if (p.y > canvas.height) particles.splice(index, 1);
+            });
+            if (particles.length > 0) requestAnimationFrame(animateConfetti);
+        }
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
